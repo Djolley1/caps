@@ -1,4 +1,4 @@
-'us strict';
+'use strict';
 
 const Events = require('events');
 const eventPool = new Events();
