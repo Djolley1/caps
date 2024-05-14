@@ -2,4 +2,5 @@
 
 const driverHandler = require('./handler');
 
-driverHandler();
+module.exports = driverHandler;
+// driverHandler();

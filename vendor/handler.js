@@ -16,7 +16,8 @@ function generateOrder(storeName) {
 
     function vendorHandler(storeName) {
         const order = generateOrder(storeName);
-        eventPool.emit('pickup', { type: 'pickup', payload: order });
+        console.log(order);
+        eventPool.emit('pickup', order);
 
         eventPool.on('delivered', (event) => {
             if(event.payload.store === storeName) {
@@ -25,4 +26,4 @@ function generateOrder(storeName) {
         });
     }
 
-module.exports = vendorHandler;
+module.exports = {vendorHandler};
