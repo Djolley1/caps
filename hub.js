@@ -2,15 +2,15 @@
 
 const eventPool = require('./eventPool');
 
-eventPool.on('pickup', logEvent);
+eventPool.on('pickup', (payload) => logEvent('pickup', payload));
 eventPool.on('in-transit', logEvent);
 eventPool.on('delivered', logEvent);
 
-function logEvent(event) {
+function logEvent(event, payload) {
     console.log(`EVENT: {
-        event: '${event.type}',
+        event: '${event}',
         time: '${new Date().toISOString()}',
-        payload: ${JSON.stringify(event.payload, null, 2)}
+        payload: ${JSON.stringify(payload, null, 2)}
     }`);
 }
 
