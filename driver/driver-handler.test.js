@@ -1,60 +1,38 @@
 'use strict';
 
+const { driverHandler } = require('../driver');
 const eventPool = require('../eventPool');
-const driverHandler = require('./handler');
 
-describe('Driver Handler Tests', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
+jest.mock('../eventPool', () => ({
+    on: jest.fn(),
+    emit: jest.fn()
+}));
 
-  test('should log picked up and delivered messages', (done) => {
-    jest.setTimeout(10000);
+describe('Driver Handler', () => {
+    let consoleSpy;
 
-    console.log = jest.fn();
-    
-    const payload = {
-      store: '1-206-flowers',
-      orderId: 'e3669048-7313-427b-b6cc-74010ca1f8f0',
-      customer: 'Jamal Braun',
-      address: 'Schmittfort, LA',
-    };
-
-    driverHandler();
-
-    eventPool.emit('pickup', { type: 'pickup', payload });
-
-    setTimeout(() => {
-        expect(console.log).toHaveBeenCalledWith('Payload received in pickup event:', payload);
-      expect(console.log).toHaveBeenCalledWith(`DRIVER: picked up ${payload.orderId}`);
-      expect(console.log).toHaveBeenCalledWith(`DRIVER: delivered ${payload.orderId}`);
-      done();
-    }, 1500);
-  });
-
-  test('should emit in-transit and delivered events', (done) => {
-    jest.setTimeout(10000);
-    
-    const payload = {
-      store: '1-206-flowers',
-      orderId: 'e3669048-7313-427b-b6cc-74010ca1f8f0',
-      customer: 'Jamal Braun',
-      address: 'Schmittfort, LA',
-    };
-
-    driverHandler();
-
-    eventPool.on('in-transit', (event) => {
-      expect(event.type).toBe('in-transit');
-      expect(event.payload).toEqual(payload);
+    beforeEach(() => {
+        consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+        jest.useFakeTimers();
     });
 
-    eventPool.on('delivered', (event) => {
-      expect(event.type).toBe('delivered');
-      expect(event.payload).toEqual(payload);
-      done();
+    afterEach(() => {
+        consoleSpy.mockRestore();
+        jest.clearAllTimers();
     });
 
-    eventPool.emit('pickup', { type: 'pickup', payload });
-  });
+    test('should log the payload and emit in-transit event', () => {
+        const payload = { orderId: '12345' };
+
+        driverHandler(payload);
+
+        expect(consoleSpy).toHaveBeenCalledWith('Payload received in pickup event:', payload);
+        expect(consoleSpy).toHaveBeenCalledWith('DRIVER: picked up 12345');
+        expect(eventPool.emit).toHaveBeenCalledWith('in-transit', payload);
+
+        jest.runAllTimers();
+
+        expect(consoleSpy).toHaveBeenCalledWith('DRIVER: delivered 12345');
+        expect(eventPool.emit).toHaveBeenCalledWith('delivered', { type: 'delivered', payload });
+    });
 });

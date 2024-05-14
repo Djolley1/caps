@@ -1,44 +1,42 @@
 'use strict';
 
+const { vendorHandler, generateOrder } = require('../vendor');
 const eventPool = require('../eventPool');
-const vendorHandler = require('./handler');
 
-describe('Vendor Handler Tests', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
+jest.mock('../eventPool', () => ({
+    on: jest.fn(),
+    emit: jest.fn()
+}));
 
-  test('should emit a pickup event', (done) => {
-    const storeName = '1-206-flowers';
-    
-    eventPool.on('pickup', (event) => {
-      expect(event.type).toBe('pickup');
-      expect(event.payload.store).toBe(storeName);
-      done();
+describe('Vendor Handler', () => {
+    let consoleSpy;
+
+    beforeEach(() => {
+        consoleSpy = jest.spyOn(console, 'log').mockImplementation();
     });
 
-    vendorHandler(storeName);
-  });
-
-  test('should log a thank you message when a package is delivered', (done) => {
-    console.log = jest.fn();
-    
-    const storeName = '1-206-flowers';
-    const customerName = 'Jamal Braun';
-    const payload = {
-      store: storeName,
-      orderId: 'e3669048-7313-427b-b6cc-74010ca1f8f0',
-      customer: customerName,
-      address: 'Schmittfort, LA',
-    };
-
-    vendorHandler(storeName);
-
-    eventPool.emit('delivered', { type: 'delivered', payload });
-
-    setImmediate(() => {
-      expect(console.log).toHaveBeenCalledWith(`VENDOR: Thank you for your order ${customerName}`);
-      done();
+    afterEach(() => {
+        consoleSpy.mockRestore();
     });
-  });
+
+    test('should generate an order and emit pickup event', () => {
+        const storeName = 'Test Store';
+        const order = generateOrder(storeName);
+
+        vendorHandler(storeName);
+
+        expect(consoleSpy).toHaveBeenCalledWith(order);
+        expect(eventPool.emit).toHaveBeenCalledWith('pickup', order);
+    });
+
+    test('should log thank you message when package is delivered', () => {
+        const storeName = 'Test Store';
+        const order = generateOrder(storeName);
+        const deliveredEvent = { payload: order };
+
+        vendorHandler(storeName);
+        eventPool.on.mock.calls[0][1](deliveredEvent);
+
+        expect(consoleSpy).toHaveBeenCalledWith(`VENDOR: Thank you for your order ${order.customer}`);
+    });
 });
