@@ -1,38 +1,34 @@
 'use strict';
 
-// const vendorHandler = require('./handler');
 const io = require('socket.io-client');
-const socket = io.connect('http://localhost:3000');
 const Chance = require('chance');
 const chance = new Chance();
+const { handlePickup, handleDelivery } = require('./handler.js');
 
-const storeName = '1-206-Flowers';
+const URL = process.env.HUB;
 
-socket.emit('join', storeName);
+console.log('Connecting to:', URL);
+const socket = io.connect(URL);
 
-setInterval(() => {
-    generateOrder(socket);
-}, 5000);
+// Subscribe to the right events and handle them with the right handlers
+socket.on('pickup', handlePickup);
+socket.on('delivered', handleDelivery);
 
-socket.on('delivered', (payload) => {
-    if (payload.store === storeName) {
-        console.log(`VENDOR: Thank you for your order ${payload.customer}`);
-    }
-});
+makeFakeOrders();
 
-const generateOrder = (socket, payload = null) => {
-    if (!payload) {
-        payload = {
-            store: storeName,
-            orderId: chance.guid(),
-            customer: chance.name(),
-            address: `${chance.city()}, ${chance.state()}`
-        }
-    }
-   console.log('order is ready for pickup');
-   socket.emit('pickup', payload);     
-    };
+function makeFakeOrders() {
+    const fake = new Chance();
 
-// Simulate a vendor triggering a pickup event
-// vendorHandler('1-206-flowers');
-module.exports = {generateOrder};
+    setInterval(() => {
+        let order = {
+            orderID: fake.guid(),
+            status: 'ready',
+            store: fake.company(),
+            customer: fake.name(),
+            address: fake.address(),
+            amount: fake.dollar()
+        };
+        console.log('VENDOR: New Order', order.orderID);
+        socket.emit('ready-for-pickup', order);
+    }, 1000);
+}

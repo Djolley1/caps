@@ -1,28 +1,21 @@
-// 'use strict';
+'use strict';
 
-// const Chance = require('chance');
-// const chance = new Chance();
-// const eventPool = require('../eventPool');
+require('dotenv').config();
+const io = require('socket.io-client');
+const socket = io.connect('http://localhost:3000');
 
-// function generateOrder(storeName) {
-//     return {
-//         store: storeName,
-//         orderId: chance.guid(),
-//         customer: chance.name(),
-//         address: `${chance.city()}, ${chance.state()}`
-//     };
-// }
+// Function to handle pickup event from the hub
+const handlePickup = (payload) => {
+    console.log(`VENDOR: Cool, ${payload.orderID} is on the way!`);
+};
 
-// function vendorHandler(storeName) {
-//     const order = generateOrder(storeName);
-//     console.log(order);
-//     eventPool.emit('pickup', order);
+// Function to handle delivery event from the hub
+const handleDelivery = (payload) => {
+    console.log(`VENDOR: Thanks for delivering ${payload.orderID}`);
+};
 
-//     eventPool.on('delivered', (event) => {
-//         if (event.payload.store === storeName) {
-//             console.log(`VENDOR: Thank you for your order ${event.payload.customer}`);
-//         }
-//     });
-// }
+// Subscribe to pickup and delivery events from the hub
+socket.on('pickup', handlePickup);
+socket.on('delivered', handleDelivery);
 
-// module.exports = { vendorHandler, generateOrder };
+module.exports = { handlePickup, handleDelivery };

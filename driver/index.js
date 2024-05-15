@@ -1,17 +1,29 @@
 'use strict';
 
-// const driverHandler = require('./handler');
-// require('./')
+require('dotenv').config();
 const io = require('socket.io-client');
-const socket = io.connect('http://localhost:3000');
 
-socket.on('pickup', (payload) => {
-    console.log(`DRIVER: picked up ${payload.orderId}`);
+const URL = process.env.HUB;
+
+console.log('Connecting to:', URL);
+const socket = io.connect(URL);
+
+// Function to handle pickup event from the hub
+const handlePickup = (payload) => {
     setTimeout(() => {
-        console.log(`DRIVER: delivered ${payload.orderId}`);
-        socket.emit('delivered', payload);
+        console.log('DRIVER: Picked Up', payload.orderID);
+        socket.emit('package-in-transit', payload);
     }, 1000);
-});
 
+    setTimeout(() => {
+        console.log('DRIVER: Delivered', payload.orderID);
+        socket.emit('package-delivered', payload);
+        socket.emit('driver-ready');
+    }, 4000);
+};
 
-// module.exports = driverHandler;
+// Let the hub know that the driver is ready to pick up orders
+socket.emit('driver-ready');
+
+// Listen for pickup event from the hub
+socket.on('pickup', handlePickup);
